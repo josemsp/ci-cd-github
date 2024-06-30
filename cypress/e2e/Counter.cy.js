@@ -3,6 +3,10 @@ describe('Counter process', () => {
     cy.visit('/');
   })
 
+  it('render success', () => {
+    cy.get('[data-cy="counter"]').should('be.visible');
+  })
+
   it('Should display first render counter', () => {
     cy.contains('counter: 0').should('be.visible')
   })

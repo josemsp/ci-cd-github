@@ -6,6 +6,13 @@ on:
       - master
       - develop
 
+
+# Sets the GITHUB_TOKEN permissions to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 concurrency: 
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -94,8 +101,22 @@ jobs:
           node-version: 20
           cache: 'pnpm'
 
+      # - name: Cache Cypress binary
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: ~/.cache/Cypress
+      #     key: cypress-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+      #     restore-keys: |
+      #       cypress-${{ runner.os }}-
+              
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
+
+      - name: Install Cypress
+        run: pnpm exec cypress install
+
+      - name: Verify Cypress
+        run: pnpm exec cypress verify
 
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -109,3 +130,32 @@ jobs:
           start: pnpm preview --port 5173
           command: pnpm cy:run
           wait-on: http://localhost:5173
+  
+  Deploy:
+    needs: [Build, E2E]
+    if: github.ref == 'refs/heads/master'
+    permissions:
+      pages: write
+      id-token: write
+    environment: 
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-22.04
+    steps: 
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

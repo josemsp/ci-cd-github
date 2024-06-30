@@ -12,4 +12,5 @@ export default defineConfig({
     globals: true,
     setupFiles: './src/testing/vitest.setup.ts'
   },
+  base: '/ci-cd-github/'
 })
